@@ -66,5 +66,35 @@ class EventControllerTest {
                 .andExpect(jsonPath("free").value(Matchers.not(false)));
     }
 
+    @Test
+    public void createEvent_BedRequest() throws Exception {
+        Event event = Event.builder()
+                .name("Spring")
+                .description("REST PI Development with Spring")
+                .beginEnrollmentDateTime(LocalDateTime.of(2018, 11, 11, 11, 11))
+                .closeEnrollmentDateTime(LocalDateTime.of(2018, 11, 11, 11, 11))
+                .beginEventDateTime(LocalDateTime.of(2018, 11, 11, 11, 11))
+                .endEventDateTime(LocalDateTime.of(2018, 11, 11, 11, 11))
+                .basePrice(100)
+                .maxPrice(200)
+                .limitOfEnrollment(100)
+                .location("강남역")
+                .free(true)
+                .offline(false)
+                .eventStatus(EventStatus.PUBLISHED)
+                .build();
+
+        event.setId(1L);
+        Mockito.when(eventRepository.save(event)).thenReturn(event);
+
+        mockMvc.perform(post("/api/events")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaTypes.HAL_JSON)
+                .content(objectMapper.writeValueAsString(event)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+
+
 
 }
