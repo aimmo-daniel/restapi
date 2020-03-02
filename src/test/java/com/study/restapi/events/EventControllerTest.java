@@ -30,11 +30,10 @@ class EventControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Transactional
     @Test
     @Description("정상적으로 이벤트를 생성하는 테스트")
     public void createEvent() throws Exception {
-        EventDto eventDto = EventDto.builder()
+        EventDto event = EventDto.builder()
                 .name("Spring")
                 .description("REST PI Development with Spring")
                 .beginEnrollmentDateTime(LocalDateTime.of(2018, 10, 11, 11, 11))
@@ -50,14 +49,15 @@ class EventControllerTest {
         mockMvc.perform(post("/api/events")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaTypes.HAL_JSON)
-                .content(objectMapper.writeValueAsString(eventDto)))
+                .content(objectMapper.writeValueAsString(event)))
                 .andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("id").exists())
                 .andExpect(header().exists(HttpHeaders.LOCATION))
                 .andExpect(header().string("Content-Type", "application/hal+json"))
-                .andExpect(jsonPath("id").value(Matchers.not(1L)))
-                .andExpect(jsonPath("free").value(Matchers.not(true)));
+                .andExpect(jsonPath("free").value(false))
+                .andExpect(jsonPath("offline").value(true))
+                .andExpect(jsonPath("eventStatus").value(EventStatus.DRAFT.name()));
     }
 
     @Test
