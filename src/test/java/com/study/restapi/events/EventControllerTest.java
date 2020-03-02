@@ -34,7 +34,7 @@ class EventControllerTest {
     @Test
     @Description("정상적으로 이벤트를 생성하는 테스트")
     public void createEvent() throws Exception {
-        EventDto event = EventDto.builder()
+        EventDto eventDto = EventDto.builder()
                 .name("Spring")
                 .description("REST PI Development with Spring")
                 .beginEnrollmentDateTime(LocalDateTime.of(2018, 10, 11, 11, 11))
@@ -50,7 +50,7 @@ class EventControllerTest {
         mockMvc.perform(post("/api/events")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaTypes.HAL_JSON)
-                .content(objectMapper.writeValueAsString(event)))
+                .content(objectMapper.writeValueAsString(eventDto)))
                 .andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("id").exists())
@@ -101,26 +101,27 @@ class EventControllerTest {
     @Test
     @Description("입력 값이 잘못된 경우에 에러가 발생하는 테스트")
     public void createEvent_BadRequest_Wrong_Input() throws Exception {
-        Event event = Event.builder()
+        EventDto eventDto = EventDto.builder()
                 .name("Spring")
                 .description("REST PI Development with Spring")
                 .beginEnrollmentDateTime(LocalDateTime.of(2018, 11, 16, 11, 11))
-                .closeEnrollmentDateTime(LocalDateTime.of(2018, 11, 15, 11, 11))
-                .beginEventDateTime(LocalDateTime.of(2018, 11, 17, 11, 11))
+                .closeEnrollmentDateTime(LocalDateTime.of(2018, 11, 17, 11, 11))
+                .beginEventDateTime(LocalDateTime.of(2018, 11, 15, 11, 11))
                 .endEventDateTime(LocalDateTime.of(2018, 11, 16, 11, 11))
                 .basePrice(10000)
                 .maxPrice(200)
                 .limitOfEnrollment(100)
                 .location("강남역")
-                .free(true)
-                .offline(false)
-                .eventStatus(EventStatus.PUBLISHED)
                 .build();
 
         mockMvc.perform(post("/api/events")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(event)))
-                .andExpect(status().isBadRequest());
+                .content(this.objectMapper.writeValueAsString(eventDto)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$[0].objectName").exists())
+                .andExpect(jsonPath("$[1].defaultMessage").exists())
+                .andExpect(jsonPath("$[0].code").exists());
     }
 
 }
