@@ -47,9 +47,6 @@ class EventTest {
             "100, 0, false",
     })
     public void testFree(int basePrice, int maxPrice, boolean isFree) {
-        System.out.println(basePrice);
-        System.out.println(maxPrice);
-        System.out.println(isFree);
         // Given 이런 상태에서
         Event event = Event.builder()
                 .basePrice(basePrice)
