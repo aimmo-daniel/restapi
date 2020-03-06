@@ -2,6 +2,7 @@ package com.study.restapi.events;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.study.restapi.common.RestDocsConfiguration;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
@@ -14,6 +15,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import javax.validation.constraints.Null;
 import java.time.LocalDateTime;
 
 import static org.springframework.restdocs.headers.HeaderDocumentation.*;
@@ -39,7 +41,7 @@ class EventControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    @Description("정상적으로 이벤트를 생성하는 테스트")
+    @DisplayName("정상적으로 이벤트를 생성하는 테스트")
     public void createEvent() throws Exception {
         EventDto event = EventDto.builder()
                 .name("Spring")
@@ -66,16 +68,14 @@ class EventControllerTest {
                 .andExpect(jsonPath("free").value(false))
                 .andExpect(jsonPath("offline").value(true))
                 .andExpect(jsonPath("eventStatus").value(EventStatus.DRAFT.name()))
-                .andExpect(jsonPath("_links.self").exists())
-                .andExpect(jsonPath("_links.query-events").exists())
-                .andExpect(jsonPath("_links.update-event").exists())
 
                 //RestDocs
                 .andDo(document("create-event",   //문서의 이름
                         links(  //링크 목록
                                 linkWithRel("self").description("셀프 링크"),
                                 linkWithRel("query-events").description("쿼리 이벤트 링크"),
-                                linkWithRel("update-event").description("업데이트 이벤트 링크")
+                                linkWithRel("update-event").description("업데이트 이벤트 링크"),
+                                linkWithRel("profile").description("프로필 링크")
                         ),
                         requestHeaders(  //요청 헤더
                                 headerWithName(HttpHeaders.ACCEPT).description("accept header"),
@@ -115,7 +115,8 @@ class EventControllerTest {
                                 fieldWithPath("eventStatus").description("이벤트 상태"),
                                 fieldWithPath("_links.self.href").description("link to self"),
                                 fieldWithPath("_links.query-events.href").description("link to query event list"),
-                                fieldWithPath("_links.update-event.href").description("link to update existing event")
+                                fieldWithPath("_links.update-event.href").description("link to update event"),
+                                fieldWithPath("_links.profile.href").description("link to profile")
                         )
 
                 ))
@@ -123,7 +124,7 @@ class EventControllerTest {
     }
 
     @Test
-    @Description("입력 받을 수 없는 값을 사용한 경우에 에러가 발생하는 테스트")
+    @DisplayName("입력 받을 수 없는 값을 사용한 경우에 에러가 발생하는 테스트")
     public void createEvent_BadRequest() throws Exception {
         Event event = Event.builder()
                 .name("Spring")
@@ -150,7 +151,7 @@ class EventControllerTest {
     }
 
     @Test
-    @Description("입력 값이 비어있는 경우에 에러가 발생하는 테스트")
+    @DisplayName("입력 값이 비어있는 경우에 에러가 발생하는 테스트")
     public void createEvent_BadRequest_Empty_Input() throws Exception {
         EventDto eventDto = EventDto.builder().build();
 
@@ -161,19 +162,19 @@ class EventControllerTest {
     }
 
     @Test
-    @Description("입력 값이 잘못된 경우에 에러가 발생하는 테스트")
+    @DisplayName("입력 값이 잘못된 경우에 에러가 발생하는 테스트")
     public void createEvent_BadRequest_Wrong_Input() throws Exception {
         EventDto eventDto = EventDto.builder()
                 .name("Spring")
-                .description("REST PI Development with Spring")
-                .beginEnrollmentDateTime(LocalDateTime.of(2018, 11, 16, 11, 11))
-                .closeEnrollmentDateTime(LocalDateTime.of(2018, 11, 17, 11, 11))
-                .beginEventDateTime(LocalDateTime.of(2018, 11, 15, 11, 11))
-                .endEventDateTime(LocalDateTime.of(2018, 11, 16, 11, 11))
+                .description(null)
+                .beginEnrollmentDateTime(LocalDateTime.of(2019, 12, 17, 22, 39))
+                .closeEnrollmentDateTime(LocalDateTime.of(2019, 12, 8, 22, 39))
+                .beginEventDateTime(LocalDateTime.of(2019, 12, 7, 12, 39))
+                .endEventDateTime(LocalDateTime.of(2019, 12, 9, 22, 39))
                 .basePrice(10000)
                 .maxPrice(200)
                 .limitOfEnrollment(100)
-                .location("강남역")
+                .location("gasan")
                 .build();
 
         mockMvc.perform(post("/api/events")
@@ -182,7 +183,7 @@ class EventControllerTest {
                 .andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$[0].objectName").exists())
-                .andExpect(jsonPath("$[1].defaultMessage").exists())
+                .andExpect(jsonPath("$[0].defaultMessage").exists())
                 .andExpect(jsonPath("$[0].code").exists());
     }
 
