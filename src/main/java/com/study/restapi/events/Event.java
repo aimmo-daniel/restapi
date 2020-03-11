@@ -1,17 +1,18 @@
 package com.study.restapi.events;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
-@Builder @AllArgsConstructor @NoArgsConstructor
+@Builder @AllArgsConstructor @NoArgsConstructor @ToString
 @Getter @Setter @EqualsAndHashCode(of = "id")
 @Entity
 public class Event {
 
     @Id @GeneratedValue
-    private Integer id;
+    private Long id;
     private String name;
     private String description;
     private LocalDateTime beginEnrollmentDateTime;
@@ -27,14 +28,17 @@ public class Event {
     @Enumerated(EnumType.STRING)
     private EventStatus eventStatus = EventStatus.DRAFT;
 
-
+    @ManyToOne
+    // 간단한 비즈니스로직은 도메인에서 처리하는 것도 나쁘지 않다.
+    // 또는 서비스에 위임해서 분리하도록 하는 것이 좋다.
     public void update() {
         // Update free
-        if (this.basePrice == 0 && this.maxPrice == 0) {
-            this.free = true;
+        if (this.basePrice == 0  && this.maxPrice == 0) {
+            this.free =true;
         } else {
             this.free = false;
         }
+        // isBlank는 자바 11에서 추가됨
         // Update offline
         if (this.location == null || this.location.isEmpty()) {
             this.offline = false;
@@ -42,5 +46,4 @@ public class Event {
             this.offline = true;
         }
     }
-
 }

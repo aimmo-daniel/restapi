@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Description;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpHeaders;
@@ -16,13 +15,15 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import javax.validation.constraints.Null;
 import java.time.LocalDateTime;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 import static org.springframework.restdocs.headers.HeaderDocumentation.*;
 import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.linkWithRel;
 import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.links;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.payload.PayloadDocumentation.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -42,9 +43,12 @@ class EventControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    EventRepository eventRepository;
+
     @Test
     @DisplayName("정상적으로 이벤트를 생성하는 테스트")
-    public void createEvent() throws Exception {
+    void createEvent() throws Exception {
         EventDto event = EventDto.builder()
                 .name("Spring")
                 .description("REST PI Development with Spring")
@@ -127,7 +131,7 @@ class EventControllerTest {
 
     @Test
     @DisplayName("입력 받을 수 없는 값을 사용한 경우에 에러가 발생하는 테스트")
-    public void createEvent_BadRequest() throws Exception {
+    void createEvent_BadRequest() throws Exception {
         Event event = Event.builder()
                 .name("Spring")
                 .description("REST PI Development with Spring")
@@ -154,7 +158,7 @@ class EventControllerTest {
 
     @Test
     @DisplayName("입력 값이 비어있는 경우에 에러가 발생하는 테스트")
-    public void createEvent_BadRequest_Empty_Input() throws Exception {
+    void createEvent_BadRequest_Empty_Input() throws Exception {
         EventDto eventDto = EventDto.builder().build();
 
         this.mockMvc.perform(post("/api/events")
@@ -165,7 +169,7 @@ class EventControllerTest {
 
     @Test
     @DisplayName("입력 값이 잘못된 경우에 에러가 발생하는 테스트")
-    public void createEvent_BadRequest_Wrong_Input() throws Exception {
+    void createEvent_BadRequest_Wrong_Input() throws Exception {
         EventDto eventDto = EventDto.builder()
                 .name("Spring")
                 .description(null)
@@ -184,9 +188,64 @@ class EventControllerTest {
                 .content(this.objectMapper.writeValueAsString(eventDto)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$[0].objectName").exists())
-                .andExpect(jsonPath("$[0].defaultMessage").exists())
-                .andExpect(jsonPath("$[0].code").exists());
+                .andExpect(jsonPath("content[0].objectName").exists())
+                .andExpect(jsonPath("content[0].defaultMessage").exists())
+                .andExpect(jsonPath("content[0].code").exists())
+                .andExpect(jsonPath("_links.index").exists());
+    }
+
+    @Test
+    @DisplayName("30개의 이벤트를 10개씩, 두번째 페이지 조회하기")
+    void queryEvents() throws Exception {
+        // Given
+        LongStream.range(0, 30).forEach(i -> {
+            this.generateEvent(i);
+        });
+
+        // When & Then
+        this.mockMvc.perform(get("/api/events")
+                    .param("page", "1")
+                    .param("size", "10")
+                    .param("sort", "name,DESC")
+                )
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("page").exists())
+        ;
+    }
+
+    @Test
+    @DisplayName("기존의 이벤트를 하나 조회하기")
+    void getEvent() throws Exception {
+        // Given
+        Event event = this.generateEvent(100L);
+
+        // When & Then
+        this.mockMvc.perform(get("/api/events/{id}", event.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("name").exists())
+                .andExpect(jsonPath("id").exists())
+                .andExpect(jsonPath("_links.self").exists())
+                .andExpect(jsonPath("_links.profile").exists())
+                .andDo(document("get-an-event"));
+    }
+
+    @Test
+    @DisplayName("없는 이벤트를 조회 했을 때 404 응답 받기")
+    void getEvent404() throws Exception {
+        // When & Then
+        Long id = 123234L;
+        this.mockMvc.perform(get("/api/events/" + id))
+                .andExpect(status().isNotFound());
+    }
+
+    private Event generateEvent(Long index) {
+        Event event = Event.builder()
+                .name("event " + index)
+                .description("test event")
+                .build();
+
+        return this.eventRepository.save(event);
     }
 
 }
