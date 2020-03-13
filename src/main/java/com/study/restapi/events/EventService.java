@@ -42,7 +42,7 @@ public class EventService {
 
         Event event = modelMapper.map(eventDto, Event.class);
         event.update();
-        Event newEvent = this.eventRepository.save(event);
+        Event newEvent = eventRepository.save(event);
 
         // hateoas 링크 추가
         ControllerLinkBuilder selfLinkBuilder = linkTo(EventController.class).slash(newEvent.getId());
@@ -62,14 +62,14 @@ public class EventService {
     }
 
     public ResponseEntity queryEvents(Pageable pageable, PagedResourcesAssembler<Event> assembler) {
-        Page<Event> page = this.eventRepository.findAll(pageable);
+        Page<Event> page = eventRepository.findAll(pageable);
         var pageResources = assembler.toModel(page);
         return ResponseEntity.ok(pageResources);
     }
 
 
     public ResponseEntity getEvent(Long id) {
-        Optional<Event> optionalEvent = this.eventRepository.findById(id);
+        Optional<Event> optionalEvent = eventRepository.findById(id);
         if(!optionalEvent.isPresent()) {
             return ResponseEntity.notFound().build();
         }
@@ -81,7 +81,7 @@ public class EventService {
     }
 
     public ResponseEntity modifyEvent(Long id, EventDto eventDto, Errors errors) {
-        Optional<Event> optionalEvent = this.eventRepository.findById(id);
+        Optional<Event> optionalEvent = eventRepository.findById(id);
         if (!optionalEvent.isPresent()) {
             return ResponseEntity.notFound().build();
         }
@@ -90,14 +90,14 @@ public class EventService {
             return badRequest(errors);
         }
 
-        this.eventValidator.validate(eventDto, errors);
+        eventValidator.validate(eventDto, errors);
         if (errors.hasErrors()) {
             return badRequest(errors);
         }
 
         Event existingEvent = optionalEvent.get();
-        this.modelMapper.map(eventDto, existingEvent);
-        Event savedEvent = this.eventRepository.save(existingEvent);
+        modelMapper.map(eventDto, existingEvent);
+        Event savedEvent = eventRepository.save(existingEvent);
 
         EventResource eventResource = new EventResource(savedEvent);
         eventResource.add(new Link("/docs/index.html#resources-events-update").withRel("profile"));
