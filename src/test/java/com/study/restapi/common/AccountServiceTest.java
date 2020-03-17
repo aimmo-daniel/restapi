@@ -9,13 +9,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Set;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,18 +21,20 @@ import static org.junit.jupiter.api.Assertions.*;
 @ActiveProfiles("test")
 class AccountServiceTest {
 
+
+
     @Autowired
     AccountService accountService;
 
     @Autowired
-    PasswordEncoder passwordEncoder;
+    AccountRepository accountRepository;
 
     @Test
     public void findByUserName() {
         // Given
-        Set<AccountRole> roles = (Set<AccountRole>) Arrays.asList(AccountRole.ADMIN, AccountRole.USER);
         String username = "sangjin@gmail.com";
         String password = "sangjin";
+        Set<AccountRole> roles = new HashSet<>(Arrays.asList(AccountRole.ADMIN, AccountRole.USER));
 
         Account account = Account.builder()
                 .email(username)
@@ -43,19 +42,20 @@ class AccountServiceTest {
                 .roles(roles)
                 .build();
 
-        accountService.saveAccount(account);
-
         // When
         UserDetailsService userDetailsService = (UserDetailsService) accountService;
-        UserDetails userDetails = userDetailsService.loadUserByUsername("sangjin");
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
         // Then
-        assertThat(passwordEncoder.matches(password, userDetails.getPassword())).isTrue();
+        assertThat(userDetails.getPassword()).isEqualTo(password);
     }
 
     @Test
     public void findByUsernameFail() {
+        // Expected
         String username = "random@email.com";
+
+        expectedException
         try {
             accountService.loadUserByUsername(username);
             fail("supposed to be failed");
